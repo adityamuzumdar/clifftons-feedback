@@ -1,0 +1,160 @@
+<div class="header-bar">
+  <div class="inner">
+    <div>
+      <h1>Clifton Feedback — Admin</h1>
+      <div class="team-name" *ngIf="team">{{ team.teamName }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Step 1: Create team -->
+  <ng-container *ngIf="step === 'create'">
+    <div class="card">
+      <h2>Create a feedback round</h2>
+      <p class="subtitle">You'll get one invite link to share with your entire team, plus an admin link to monitor progress.</p>
+
+      <div class="alert alert-info">
+        All feedback is anonymous. Even you as admin cannot see anyone's results — only each member can view their own.
+      </div>
+
+      <div class="alert alert-error" *ngIf="createError">{{ createError }}</div>
+
+      <form (ngSubmit)="createTeam()">
+        <div class="form-group">
+          <label>Team name</label>
+          <input [(ngModel)]="teamName" name="teamName" placeholder="e.g. Hilti Product Team A" required />
+        </div>
+        <button class="btn btn-primary" type="submit" [disabled]="!teamName.trim() || creating">
+          {{ creating ? 'Creating...' : 'Create Team' }}
+        </button>
+      </form>
+    </div>
+  </ng-container>
+
+  <!-- Step 2: Manage team -->
+  <ng-container *ngIf="step === 'manage'">
+
+    <div class="alert alert-error" *ngIf="loadError">{{ loadError }}</div>
+    <div *ngIf="loading" class="card">Loading...</div>
+
+    <ng-container *ngIf="team && !loading">
+
+      <!-- Phase banner -->
+      <div class="card" [style.border-left]="team.feedbackOpen ? '3px solid #4caf50' : '3px solid #f9a825'">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="margin-bottom:4px;">
+              {{ team.feedbackOpen ? 'Phase 2 — Feedback open' : 'Phase 1 — Registration' }}
+            </h2>
+            <p style="font-size:0.85rem; color:var(--gray-600); margin:0;">
+              {{ team.feedbackOpen
+                ? 'Members can now submit feedback. New registrations are locked.'
+                : 'Members are joining. Click "Open Feedback" once everyone has registered.' }}
+            </p>
+          </div>
+          <button class="btn btn-primary" *ngIf="!team.feedbackOpen"
+            [disabled]="team.members.length === 0"
+            (click)="openFeedback()">
+            Open Feedback Round
+          </button>
+        </div>
+      </div>
+
+      <!-- Invite link — only shown during registration -->
+      <div class="card" *ngIf="!team.feedbackOpen" style="border-left: 3px solid #4caf50;">
+        <h2>Team invite link</h2>
+        <p style="font-size:0.85rem; color:var(--gray-600); margin-bottom:12px;">
+          Share this ONE link in your team group chat. Everyone opens it, enters their name, and gets their personal form.
+        </p>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <code style="flex:1; background:var(--gray-100); padding:8px 10px; border-radius:4px; font-size:0.8rem; word-break:break-all;">
+            {{ inviteLink }}
+          </code>
+          <button class="btn btn-primary" (click)="copy(inviteLink, 'invite')">
+            {{ copiedKey === 'invite' ? 'Copied!' : 'Copy' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Completion stats -->
+      <div class="card">
+        <h2>Completion</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:0.9rem; color:var(--gray-600);">
+            {{ team.completionStats.submitted }} / {{ team.completionStats.total }} submitted
+          </span>
+          <strong>{{ team.completionStats.percent }}%</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="fill" [style.width.%]="team.completionStats.percent"></div>
+        </div>
+      </div>
+
+      <!-- Member list — submission status only, no results links -->
+      <div class="card" *ngIf="team.members.length > 0">
+        <h2>Members ({{ team.members.length }})</h2>
+        <p style="font-size:0.8rem; color:var(--gray-600); margin-bottom:12px;">
+          Submit links are shown here only as a fallback for members who couldn't use the invite link.
+          You do not have access to anyone's results link.
+        </p>
+
+        <div class="member-row" *ngFor="let member of team.members">
+          <div>
+            <strong>{{ member.name }}</strong>
+            <span class="badge badge-success" *ngIf="member.hasSubmitted" style="margin-left:8px;">Submitted</span>
+            <span class="badge badge-pending" *ngIf="!member.hasSubmitted" style="margin-left:8px;">Pending</span>
+          </div>
+
+          <div class="actions">
+            <!-- Submit link only — no results/view link for admin -->
+            <button class="copy-btn" *ngIf="member.submitToken && !member.hasSubmitted"
+              (click)="copy(submitLink(member.submitToken), 'submit-'+member.id)">
+              {{ copiedKey === 'submit-' + member.id ? 'Copied!' : 'Submit link' }}
+            </button>
+            <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.8rem;"
+              (click)="removeMember(member)" *ngIf="!member.hasSubmitted">
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual add member (fallback) -->
+      <div class="card">
+        <h2>Add member manually</h2>
+        <p class="subtitle" style="margin-bottom:12px;">Use this only if someone can't register via the invite link.</p>
+
+        <div class="alert alert-error" *ngIf="addError">{{ addError }}</div>
+
+        <form (ngSubmit)="addMember()" style="display:flex; gap:8px;">
+          <div class="form-group" style="flex:1; margin-bottom:0;">
+            <input [(ngModel)]="newMemberName" name="memberName" placeholder="Full name" />
+          </div>
+          <button class="btn btn-outline" type="submit" [disabled]="!newMemberName.trim() || addingMember">
+            {{ addingMember ? 'Adding...' : 'Add' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin link reminder -->
+      <div class="card" style="border-left: 3px solid var(--red);">
+        <h3>Save your admin link</h3>
+        <p style="font-size:0.85rem; color:var(--gray-600); margin-bottom:12px;">
+          Bookmark this page or copy the URL. You'll need it to check progress.
+        </p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <code style="flex:1; background:var(--gray-100); padding:8px; border-radius:4px; font-size:0.8rem; word-break:break-all;">
+            {{ baseUrl }}/admin/{{ adminToken }}
+          </code>
+          <button class="copy-btn" (click)="copy(baseUrl + '/admin/' + adminToken, 'admin-link')">
+            {{ copiedKey === 'admin-link' ? 'Copied!' : 'Copy' }}
+          </button>
+        </div>
+      </div>
+
+    </ng-container>
+  </ng-container>
+
+</div>

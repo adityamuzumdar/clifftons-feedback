@@ -1,0 +1,112 @@
+<div class="header-bar" *ngIf="formData">
+  <div class="inner">
+    <div>
+      <h1>Clifton Feedback</h1>
+      <div class="team-name">{{ formData.teamName }} &mdash; {{ formData.submitterName }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="card" *ngIf="state === 'loading'">Loading your feedback form...</div>
+
+  <div *ngIf="state === 'error'" class="card">
+    <div class="alert alert-error">{{ errorMsg }}</div>
+  </div>
+
+  <div *ngIf="state === 'feedback_not_open'" class="card" style="text-align:center; padding:40px;">
+    <div style="font-size:2.5rem; margin-bottom:12px;">&#128274;</div>
+    <h2>Not open yet</h2>
+    <p class="subtitle">Your admin hasn't opened the feedback round yet. Your link will work once they do.</p>
+  </div>
+
+  <div *ngIf="state === 'already_submitted'" class="card">
+    <div class="alert alert-info">You've already submitted your feedback. Thank you!</div>
+  </div>
+
+  <div *ngIf="state === 'done'" class="card" style="text-align:center; padding:40px;">
+    <div style="font-size:3rem; margin-bottom:12px;">&#10003;</div>
+    <h2>Thank you!</h2>
+    <p class="subtitle">Your feedback was encrypted and submitted anonymously.</p>
+    <p style="font-size:0.85rem; color:var(--gray-600); margin-top:8px;">
+      Use the results link you saved when you joined to view your own feedback.
+    </p>
+  </div>
+
+  <ng-container *ngIf="state === 'form' || state === 'submitting'">
+
+    <div class="card">
+      <p style="font-size:0.9rem; color:var(--gray-600);">
+        Rate each teammate on all 4 CliftonStrengths domains (1–5) and write one strength and one area to grow.
+        Everything is <strong>encrypted in your browser</strong> — the server only stores ciphertext.
+      </p>
+    </div>
+
+    <div class="alert alert-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span style="font-size:0.85rem; color:var(--gray-600);">{{ completedCount }} / {{ forms.length }} completed</span>
+    </div>
+    <div class="progress-bar" style="margin-bottom:20px;">
+      <div class="fill" [style.width.%]="forms.length ? (completedCount / forms.length) * 100 : 0"></div>
+    </div>
+
+    <div class="card" *ngFor="let form of forms; let i = index" style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+        (click)="activeIndex = activeIndex === i ? -1 : i">
+        <div>
+          <strong>{{ form.member.name }}</strong>
+          <span class="badge badge-success" *ngIf="isMemberComplete(form)" style="margin-left:8px;">Done</span>
+          <span class="badge badge-pending" *ngIf="!isMemberComplete(form)" style="margin-left:8px;">Incomplete</span>
+        </div>
+        <span style="color:var(--gray-600);">{{ activeIndex === i ? '&#9650;' : '&#9660;' }}</span>
+      </div>
+
+      <ng-container *ngIf="activeIndex === i">
+        <hr class="divider">
+
+        <div class="rating-group">
+          <div class="rating-item" *ngFor="let domain of domains">
+            <label>{{ domain.label }}</label>
+            <div class="stars">
+              <button type="button" *ngFor="let star of stars" (click)="setRating(form, domain.key, star)">
+                <span [style.color]="form[domain.key] >= star ? '#d32f2f' : '#e0e0e0'">&#9733;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="form-group">
+          <label>One thing they're great at</label>
+          <textarea [(ngModel)]="form.goodAt" [name]="'good-' + form.member.id"
+            placeholder="e.g. Always brings clarity to complex problems..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>One area to grow</label>
+          <textarea [(ngModel)]="form.badAt" [name]="'bad-' + form.member.id"
+            placeholder="e.g. Could be more concise in meetings..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" type="button"
+          *ngIf="i < forms.length - 1" (click)="activeIndex = i + 1">
+          Next
+        </button>
+      </ng-container>
+    </div>
+
+    <div class="card" style="text-align:right;">
+      <p style="font-size:0.85rem; color:var(--gray-600); margin-bottom:12px;" *ngIf="!allComplete">
+        Complete all {{ forms.length }} members to submit.
+      </p>
+      <button class="btn btn-primary" (click)="submit()"
+        [disabled]="!allComplete || state === 'submitting'">
+        {{ state === 'submitting' ? 'Encrypting & submitting...' : 'Submit Feedback' }}
+      </button>
+    </div>
+
+  </ng-container>
+</div>

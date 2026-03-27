@@ -1,0 +1,67 @@
+<div class="header-bar" *ngIf="state === 'loaded'">
+  <div class="inner">
+    <div>
+      <h1>Your Feedback</h1>
+      <div class="team-name">{{ teamName }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="card" *ngIf="state === 'loading'">Decrypting your results...</div>
+
+  <div *ngIf="state === 'error'" class="card">
+    <div class="alert alert-error">{{ errorMsg }}</div>
+  </div>
+
+  <ng-container *ngIf="state === 'loaded'">
+
+    <div class="card">
+      <h2>{{ memberName }}</h2>
+      <p class="subtitle">
+        Based on <strong>{{ feedbacks.length }}</strong> anonymous response{{ feedbacks.length !== 1 ? 's' : '' }}.
+        All feedback was decrypted locally in your browser.
+      </p>
+      <div *ngIf="feedbacks.length === 0" class="alert alert-info">
+        No feedback received yet. Check back once your teammates have submitted.
+      </div>
+    </div>
+
+    <!-- Scores -->
+    <div class="card" *ngIf="feedbacks.length > 0">
+      <h2>CliftonStrengths Scores</h2>
+      <div class="score-grid">
+        <div class="score-card" *ngFor="let domain of domains">
+          <div class="score-label">{{ domain.label }}</div>
+          <div class="score-value">{{ averageScores[domain.key] ?? '—' }}</div>
+          <div class="score-max">/ 5</div>
+          <div style="font-size:1.2rem; color:#d32f2f; margin-top:4px;">
+            {{ stars(averageScores[domain.key]) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Good at -->
+    <div class="card" *ngIf="goodAtList.length > 0">
+      <h2>What people value about you</h2>
+      <ul class="feedback-list">
+        <li class="good" *ngFor="let item of goodAtList">{{ item }}</li>
+      </ul>
+    </div>
+
+    <!-- Areas to grow -->
+    <div class="card" *ngIf="badAtList.length > 0">
+      <h2>Areas to grow</h2>
+      <ul class="feedback-list">
+        <li class="bad" *ngFor="let item of badAtList">{{ item }}</li>
+      </ul>
+    </div>
+
+    <div class="card" style="font-size:0.8rem; color:var(--gray-600); text-align:center;">
+      All feedback is anonymous and was decrypted only in your browser. The server never saw the plaintext.
+    </div>
+
+  </ng-container>
+</div>

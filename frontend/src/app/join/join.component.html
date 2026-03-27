@@ -1,0 +1,62 @@
+<div class="header-bar">
+  <div class="inner"><h1>Clifton Feedback</h1></div>
+</div>
+
+<div class="container" style="max-width:480px;">
+
+  <div class="card" *ngIf="state === 'loading'">Loading...</div>
+
+  <div *ngIf="state === 'error'" class="card">
+    <div class="alert alert-error">{{ errorMsg }}</div>
+  </div>
+
+  <!-- Name entry -->
+  <div class="card" *ngIf="state === 'ready' || state === 'joining'">
+    <h2>Join {{ teamName }}</h2>
+    <p class="subtitle">Enter your name to get your personal feedback form.</p>
+
+    <div class="alert alert-info">
+      After joining, you'll receive a private results link. Nobody else — including the admin — can access it.
+      Your feedback is encrypted in your browser before being sent.
+    </div>
+
+    <div class="alert alert-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <form (ngSubmit)="join()">
+      <div class="form-group">
+        <label>Your name</label>
+        <input [(ngModel)]="name" name="name" placeholder="e.g. Alice Sharma" autocomplete="name" required />
+      </div>
+      <button class="btn btn-primary" type="submit" [disabled]="!name.trim() || state === 'joining'" style="width:100%;">
+        {{ state === 'joining' ? 'Setting up encryption...' : 'Get my feedback form' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- Save results link — shown ONCE, before navigating to submit -->
+  <div class="card" *ngIf="state === 'save_link'">
+    <h2>You're in!</h2>
+    <p class="subtitle">Save your results link before continuing. This is the only time it will be shown.</p>
+
+    <div style="background:#fff8e1; border:1.5px solid #f9a825; border-radius:var(--radius); padding:16px; margin-bottom:20px;">
+      <h3 style="color:#e65100; margin-bottom:8px;">Your private results link</h3>
+      <p style="font-size:0.82rem; color:var(--gray-800); margin-bottom:12px;">
+        This link is <strong>unique to you</strong>. It contains your encryption key — nobody else can open it, and it cannot be recovered if lost.
+        Bookmark it or save it somewhere safe.
+      </p>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <code style="flex:1; background:white; padding:8px 10px; border-radius:4px; font-size:0.75rem; word-break:break-all; border:1px solid #e0e0e0;">
+          {{ resultsLink }}
+        </code>
+        <button class="btn btn-primary" (click)="copyLink()">
+          {{ resultsCopied ? 'Copied!' : 'Copy' }}
+        </button>
+      </div>
+    </div>
+
+    <button class="btn btn-outline" (click)="goToSubmit()" style="width:100%;">
+      I've saved it — go to my feedback form
+    </button>
+  </div>
+
+</div>

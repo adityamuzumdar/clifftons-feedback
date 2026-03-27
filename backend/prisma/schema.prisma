@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Team {
+  id           String   @id @default(uuid())
+  name         String
+  adminToken   String   @unique
+  inviteToken  String   @unique
+  feedbackOpen Boolean  @default(false)
+  members      Member[]
+  createdAt    DateTime @default(now())
+}
+
+model Member {
+  id                  String     @id @default(uuid())
+  team                Team       @relation(fields: [teamId], references: [id])
+  teamId              String
+  name                String
+  submitToken         String     @unique
+  // Crypto fields — set at join time
+  publicKeyJwk        String?    // ECDH public key (JWK). Safe to store — only encrypts, never decrypts.
+  encryptedPrivateKey String?    // Private key encrypted with AES derived from viewSecret. Unreadable without viewSecret.
+  privateKeyIv        String?    // IV used to encrypt the private key
+  viewTokenHash       String?    @unique  // SHA-256(viewSecret). Used for lookup only. Cannot reverse to viewSecret.
+  // No viewToken column — viewSecret is never stored
+  hasSubmitted        Boolean    @default(false)
+  feedbacksReceived   Feedback[]
+}
+
+model Feedback {
+  id              String   @id @default(uuid())
+  target          Member   @relation(fields: [targetMemberId], references: [id])
+  targetMemberId  String
+  // All content is encrypted client-side. Server stores opaque blobs.
+  ephemeralPubKey String   // Submitter's ephemeral ECDH public key (JWK JSON)
+  encryptedData   String   // AES-GCM ciphertext (base64) — contains ratings + goodAt + badAt
+  iv              String   // AES-GCM IV (base64)
+  createdAt       DateTime @default(now())
+}
